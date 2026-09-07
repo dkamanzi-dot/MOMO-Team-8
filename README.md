@@ -186,9 +186,7 @@ Each team member will work on assigned tasks using Git branches. Completed work 
 
 The Scrum board will be used to track the progress of tasks from **To Do** to **In Progress** and finally to **Done**.
 
----
 
 ## Team Goal
 
 Team 8 aims to develop a reliable and user-friendly MoMo Transaction Analytics System that transforms raw SMS transaction data into structured information and meaningful visual insights.
-
