@@ -84,7 +84,7 @@ The detailed architecture diagram is available in:
 
 Team 8 uses a Scrum board to organize project tasks and track progress.
 
-**Scrum Board:** [Insert Scrum Board Link Here]
+**Scrum Board:**(https://github.com/users/dkamanzi-dot/projects/1)
 
 The board contains the following columns:
 
