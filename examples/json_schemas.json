@@ -86,7 +86,8 @@
         "status": "success",
         "original_sms": "You sent 15,000 RWF to Brian.",
         "sender": {"user_id": 1, "phone_number": "0781000001", "full_name": "Olivier Dusabamahoro", "user_role": "customer", "is_active": true},
-        "recipient": {"user_id": 2, "phone_number": "0781000002", "full_name": "Kenny Kamanzi", "user_role": "customer", "is_active": true},
+       "recipient": {"user_id": 2, "phone_number": "0781000002", "full_name": "Kenny Kamanzi", "user_role": "customer", "is_active": true},
+       "additional_user": {"user_id": 3, "phone_number": "0781000003", "full_name": "Manzi Elvis Divin", "user_role": "customer", "is_active": true},
         "categories": [{"category_id": 1, "category_code": "P2P", "category_name": "Person to Person", "description": "Transfer between individual customers"}]
       },
       "serialization_mapping": {
