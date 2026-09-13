@@ -78,6 +78,74 @@ The detailed architecture diagram is available in:
 
 `docs/architecture.png`
 
+The database ERD is available as a GitHub-rendered diagram in
+[docs/erd_diagram.md](docs/erd_diagram.md). It is generated from Mermaid source and
+matches [database/database_setup.sql](database/database_setup.sql).
+
+## Week 2 Database Design
+
+The standalone SQLite implementation is available in `database/database_setup.sql`.
+It creates the following entities:
+
+| Table | Purpose | Primary key | Important foreign keys |
+| --- | --- | --- | --- |
+| `users` | Customers, merchants, and agents involved in transactions | `user_id` | None |
+| `transactions` | Amount, parties, status, balances, and original SMS | `transaction_id` | `sender_user_id`, `recipient_user_id` -> `users.user_id` |
+| `transaction_categories_lookup` | Controlled vocabulary for payment types | `category_id` | None |
+| `transaction_categories` | Resolves the transaction/category M:N relationship | (`transaction_id`, `category_id`) | Both parent tables |
+| `system_logs` | ETL and export processing history | `log_id` | None |
+
+### Design Rationale
+
+The schema separates people, transaction facts, category definitions, and processing
+history so each concept has one clear owner. A transaction stores sender and recipient
+as foreign keys instead of repeating phone numbers and names; this preserves
+referential integrity and allows a customer record to participate in many transactions.
+The category lookup table keeps payment types consistent and makes it possible to add a
+new category without changing the transaction table. A transaction may need more than
+one classification, while each category applies to many transactions, so
+`transaction_categories` resolves that many-to-many relationship with a composite key
+that also prevents duplicate assignments. `system_logs` is independent of business
+records because one ETL run can process many transactions and can fail before any
+transaction is written. `CHECK` constraints protect amounts, fees, statuses, roles,
+record counts, and currency values; unique constraints prevent duplicate phone numbers
+and external references. Foreign keys use restrictive deletes for users and categories
+to prevent accidental loss of historical meaning, while junction rows cascade when a
+transaction is removed. Indexes support timestamp, party, status, category, and ETL
+monitoring queries. Timestamps are stored as ISO-8601 text, which is portable in SQLite
+and straightforward to serialize through the API. Seed data and commented CRUD queries
+are included in the setup script for repeatable demonstrations and screenshots.
+
+The normalized relational model is serialized into nested JSON in
+`examples/json_schemas.json`: sender and recipient foreign keys become user objects,
+and junction rows become the transaction's `categories` array.
+
+### Example Database Queries
+
+```sql
+-- Read transactions with their parties and all categories
+SELECT t.external_reference, s.full_name AS sender, r.full_name AS recipient,
+       t.amount, GROUP_CONCAT(c.category_name) AS categories
+FROM transactions AS t
+LEFT JOIN users AS s ON s.user_id = t.sender_user_id
+LEFT JOIN users AS r ON r.user_id = t.recipient_user_id
+JOIN transaction_categories AS tc ON tc.transaction_id = t.transaction_id
+JOIN transaction_categories_lookup AS c ON c.category_id = tc.category_id
+GROUP BY t.transaction_id;
+
+-- Update a pending transaction after confirmation
+UPDATE transactions SET status = 'success' WHERE transaction_id = 4;
+
+-- Remove one classification without deleting the transaction
+DELETE FROM transaction_categories
+WHERE transaction_id = 5 AND category_id = 1;
+```
+
+The schema's accuracy and security rules include foreign-key enforcement, unique
+identifiers, domain checks, non-negative monetary values, controlled status/role values,
+and prevention of self-transfers. Enable SQLite foreign keys with
+`PRAGMA foreign_keys = ON` for every connection.
+
 ---
 
 ## Scrum Board

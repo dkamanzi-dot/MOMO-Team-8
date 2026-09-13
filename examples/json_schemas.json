@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MoMo SMS serialized data model",
+  "$defs": {
+    "user": {
+      "type": "object",
+      "required": ["user_id", "phone_number", "full_name", "user_role", "is_active"],
+      "properties": {
+        "user_id": {"type": "integer", "minimum": 1},
+        "phone_number": {"type": "string", "pattern": "^[0-9]{10,15}$"},
+        "full_name": {"type": "string", "minLength": 1},
+        "user_role": {"type": "string", "enum": ["customer", "merchant", "agent", "system"]},
+        "is_active": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "category": {
+      "type": "object",
+      "required": ["category_id", "category_code", "category_name"],
+      "properties": {
+        "category_id": {"type": "integer", "minimum": 1},
+        "category_code": {"type": "string"},
+        "category_name": {"type": "string"},
+        "description": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "transaction": {
+      "type": "object",
+      "required": ["transaction_id", "external_reference", "amount", "currency", "status", "sender", "categories"],
+      "properties": {
+        "transaction_id": {"type": "integer", "minimum": 1},
+        "external_reference": {"type": "string"},
+        "transaction_timestamp": {"type": "string", "format": "date-time"},
+        "amount": {"type": "number", "minimum": 0},
+        "currency": {"type": "string", "const": "RWF"},
+        "fee": {"type": "number", "minimum": 0},
+        "status": {"type": "string", "enum": ["pending", "success", "failed", "reversed"]},
+        "original_sms": {"type": "string"},
+        "sender": {"$ref": "#/$defs/user"},
+        "recipient": {"anyOf": [{"$ref": "#/$defs/user"}, {"type": "null"}]},
+        "categories": {"type": "array", "items": {"$ref": "#/$defs/category"}, "minItems": 1}
+      },
+      "additionalProperties": false
+    },
+    "system_log": {
+      "type": "object",
+      "required": ["log_id", "process_name", "log_level", "status", "records_processed"],
+      "properties": {
+        "log_id": {"type": "integer", "minimum": 1},
+        "process_name": {"type": "string"},
+        "log_level": {"type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]},
+        "status": {"type": "string", "enum": ["started", "success", "partial_failure", "failed"]},
+        "records_processed": {"type": "integer", "minimum": 0},
+        "records_successful": {"type": "integer", "minimum": 0},
+        "records_failed": {"type": "integer", "minimum": 0},
+        "source_file": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["transaction", "serialization_mapping"],
+  "properties": {
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "serialization_mapping": {
+      "type": "object",
+      "description": "Mapping from relational foreign keys/junction rows to nested API JSON.",
+      "properties": {
+        "transactions.sender_user_id": {"const": "transaction.sender"},
+        "transactions.recipient_user_id": {"const": "transaction.recipient"},
+        "transaction_categories": {"const": "transaction.categories[]"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "transaction": {
+        "transaction_id": 1,
+        "external_reference": "TXN-20260901-0001",
+        "transaction_timestamp": "2026-09-01T08:15:00Z",
+        "amount": 15000,
+        "currency": "RWF",
+        "fee": 100,
+        "status": "success",
+        "original_sms": "You sent 15,000 RWF to Brian.",
+        "sender": {"user_id": 1, "phone_number": "0781000001", "full_name": "Aline Uwase", "user_role": "customer", "is_active": true},
+        "recipient": {"user_id": 2, "phone_number": "0781000002", "full_name": "Brian Niyonsenga", "user_role": "customer", "is_active": true},
+        "categories": [{"category_id": 1, "category_code": "P2P", "category_name": "Person to Person", "description": "Transfer between individual customers"}]
+      },
+      "serialization_mapping": {
+        "transactions.sender_user_id": "transaction.sender",
+        "transactions.recipient_user_id": "transaction.recipient",
+        "transaction_categories": "transaction.categories[]"
+      }
+    }
+  ]
+}

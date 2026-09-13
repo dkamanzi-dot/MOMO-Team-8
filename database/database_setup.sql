@@ -1,0 +1,143 @@
+-- MoMo SMS database design
+-- SQLite 3.x compatible. Run with: sqlite3 momo.db < database/database_setup.sql
+
+PRAGMA foreign_keys = ON;
+
+DROP TABLE IF EXISTS transaction_categories;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS system_logs;
+DROP TABLE IF EXISTS transaction_categories_lookup;
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    user_id INTEGER PRIMARY KEY,
+    phone_number TEXT NOT NULL UNIQUE CHECK (length(phone_number) BETWEEN 10 AND 15),
+    full_name TEXT NOT NULL CHECK (length(trim(full_name)) > 0),
+    user_role TEXT NOT NULL DEFAULT 'customer'
+        CHECK (user_role IN ('customer', 'merchant', 'agent', 'system')),
+    is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transaction_categories_lookup (
+    category_id INTEGER PRIMARY KEY,
+    category_code TEXT NOT NULL UNIQUE,
+    category_name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1))
+);
+
+CREATE TABLE transactions (
+    transaction_id INTEGER PRIMARY KEY,
+    external_reference TEXT NOT NULL UNIQUE,
+    sender_user_id INTEGER REFERENCES users(user_id) ON DELETE RESTRICT,
+    recipient_user_id INTEGER REFERENCES users(user_id) ON DELETE RESTRICT,
+    transaction_timestamp TEXT NOT NULL,
+    amount NUMERIC NOT NULL CHECK (amount >= 0),
+    currency TEXT NOT NULL DEFAULT 'RWF' CHECK (length(currency) = 3),
+    fee NUMERIC NOT NULL DEFAULT 0 CHECK (fee >= 0),
+    status TEXT NOT NULL DEFAULT 'success'
+        CHECK (status IN ('pending', 'success', 'failed', 'reversed')),
+    original_sms TEXT NOT NULL,
+    balance_before NUMERIC CHECK (balance_before IS NULL OR balance_before >= 0),
+    balance_after NUMERIC CHECK (balance_after IS NULL OR balance_after >= 0),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (sender_user_id IS NULL OR recipient_user_id IS NULL OR sender_user_id <> recipient_user_id)
+);
+
+-- A transaction can have multiple classifications and a category can classify
+-- many transactions, so this junction table resolves the M:N relationship.
+CREATE TABLE transaction_categories (
+    transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL REFERENCES transaction_categories_lookup(category_id) ON DELETE RESTRICT,
+    assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (transaction_id, category_id)
+);
+
+CREATE TABLE system_logs (
+    log_id INTEGER PRIMARY KEY,
+    process_name TEXT NOT NULL,
+    log_level TEXT NOT NULL DEFAULT 'INFO'
+        CHECK (log_level IN ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')),
+    status TEXT NOT NULL CHECK (status IN ('started', 'success', 'partial_failure', 'failed')),
+    records_processed INTEGER NOT NULL DEFAULT 0 CHECK (records_processed >= 0),
+    records_successful INTEGER NOT NULL DEFAULT 0 CHECK (records_successful >= 0),
+    records_failed INTEGER NOT NULL DEFAULT 0 CHECK (records_failed >= 0),
+    source_file TEXT,
+    error_message TEXT,
+    started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT,
+    CHECK (records_successful + records_failed <= records_processed)
+);
+
+CREATE INDEX idx_transactions_timestamp ON transactions(transaction_timestamp);
+CREATE INDEX idx_transactions_sender ON transactions(sender_user_id);
+CREATE INDEX idx_transactions_recipient ON transactions(recipient_user_id);
+CREATE INDEX idx_transactions_status ON transactions(status);
+CREATE INDEX idx_transaction_categories_category ON transaction_categories(category_id);
+CREATE INDEX idx_system_logs_process_status ON system_logs(process_name, status);
+
+CREATE TRIGGER users_updated_at
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE user_id = OLD.user_id;
+END;
+
+CREATE TRIGGER transactions_updated_at
+AFTER UPDATE ON transactions
+FOR EACH ROW
+BEGIN
+    UPDATE transactions SET updated_at = CURRENT_TIMESTAMP
+    WHERE transaction_id = OLD.transaction_id;
+END;
+
+-- Representative seed data: five records in each core entity.
+INSERT INTO users (user_id, phone_number, full_name, user_role) VALUES
+    (1, '0781000001', 'Aline Uwase', 'customer'),
+    (2, '0781000002', 'Brian Niyonsenga', 'customer'),
+    (3, '0781000003', 'Chantal Mukamana', 'customer'),
+    (4, '0781000004', 'Kigali Market', 'merchant'),
+    (5, '0781000005', 'MoMo Agent 05', 'agent');
+
+INSERT INTO transaction_categories_lookup (category_id, category_code, category_name, description) VALUES
+    (1, 'P2P', 'Person to Person', 'Transfer between individual customers'),
+    (2, 'AIRTIME', 'Airtime', 'Mobile airtime purchase'),
+    (3, 'BILL', 'Bill Payment', 'Payment to a biller or service provider'),
+    (4, 'CASH_IN', 'Cash In', 'Cash deposited through an agent'),
+    (5, 'MERCHANT', 'Merchant Payment', 'Payment to a registered merchant');
+
+INSERT INTO transactions
+    (transaction_id, external_reference, sender_user_id, recipient_user_id,
+     transaction_timestamp, amount, currency, fee, status, original_sms,
+     balance_before, balance_after) VALUES
+    (1, 'TXN-20260901-0001', 1, 2, '2026-09-01T08:15:00Z', 15000, 'RWF', 100, 'success', 'You sent 15,000 RWF to Brian.', 50000, 34900),
+    (2, 'TXN-20260901-0002', 2, 4, '2026-09-01T09:30:00Z', 8500, 'RWF', 0, 'success', 'Payment of 8,500 RWF to Kigali Market.', 40000, 31500),
+    (3, 'TXN-20260902-0001', 3, NULL, '2026-09-02T10:00:00Z', 2000, 'RWF', 0, 'success', 'Airtime purchase of 2,000 RWF.', 10000, 8000),
+    (4, 'TXN-20260902-0002', 5, 1, '2026-09-02T12:45:00Z', 30000, 'RWF', 200, 'pending', 'Cash deposit of 30,000 RWF.', 100000, 69800),
+    (5, 'TXN-20260903-0001', 1, NULL, '2026-09-03T14:20:00Z', 5000, 'RWF', 50, 'reversed', 'Reversed bill payment of 5,000 RWF.', 34900, 34900);
+
+INSERT INTO transaction_categories (transaction_id, category_id) VALUES
+    (1, 1), (2, 5), (3, 2), (4, 4), (5, 3), (5, 1);
+
+INSERT INTO system_logs
+    (log_id, process_name, log_level, status, records_processed, records_successful, records_failed, source_file) VALUES
+    (1, 'xml_import', 'INFO', 'started', 0, 0, 0, 'momo_week2.xml'),
+    (2, 'xml_import', 'INFO', 'success', 5, 5, 0, 'momo_week2.xml'),
+    (3, 'normalization', 'INFO', 'success', 5, 5, 0, 'momo_week2.xml'),
+    (4, 'categorization', 'WARNING', 'partial_failure', 5, 4, 1, 'momo_week2.xml'),
+    (5, 'json_export', 'INFO', 'success', 5, 5, 0, 'transactions.json');
+
+-- Sample queries used for CRUD/testing screenshots in the design document:
+-- SELECT t.external_reference, s.full_name AS sender, r.full_name AS recipient,
+--        t.amount, GROUP_CONCAT(c.category_name) AS categories
+-- FROM transactions t
+-- LEFT JOIN users s ON s.user_id = t.sender_user_id
+-- LEFT JOIN users r ON r.user_id = t.recipient_user_id
+-- JOIN transaction_categories tc ON tc.transaction_id = t.transaction_id
+-- JOIN transaction_categories_lookup c ON c.category_id = tc.category_id
+-- GROUP BY t.transaction_id ORDER BY t.transaction_timestamp;
+-- UPDATE transactions SET status = 'success' WHERE transaction_id = 4;
+-- DELETE FROM transaction_categories WHERE transaction_id = 5 AND category_id = 1;
