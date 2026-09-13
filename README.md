@@ -54,7 +54,7 @@ MoMo XML Data
          │
          ▼
 ┌──────────────────┐
-│  SQLite Database │
+│ SQL Database     │
 └────────┬─────────┘
          │
     ┌────┴─────┐
@@ -76,15 +76,16 @@ MoMo XML Data
 
 The detailed architecture diagram is available in:
 
-`docs/architecture.png`
+[docs/architecture.svg](docs/architecture.svg)
 
 The database ERD is available as a GitHub-rendered diagram in
 [docs/erd_diagram.md](docs/erd_diagram.md). It is generated from Mermaid source and
 matches [database/database_setup.sql](database/database_setup.sql).
+The image version required for submission is [docs/erd_diagram.png](docs/erd_diagram.png).
 
 ## Week 2 Database Design
 
-The standalone SQLite implementation is available in `database/database_setup.sql`.
+The standalone SQL implementation is available in `database/database_setup.sql`.
 It creates the following entities:
 
 | Table | Purpose | Primary key | Important foreign keys |
@@ -112,8 +113,8 @@ record counts, and currency values; unique constraints prevent duplicate phone n
 and external references. Foreign keys use restrictive deletes for users and categories
 to prevent accidental loss of historical meaning, while junction rows cascade when a
 transaction is removed. Indexes support timestamp, party, status, category, and ETL
-monitoring queries. Timestamps are stored as ISO-8601 text, which is portable in SQLite
-and straightforward to serialize through the API. Seed data and commented CRUD queries
+monitoring queries. Timestamps are stored in a standard database timestamp format and
+are straightforward to serialize through the API. Seed data and commented CRUD queries
 are included in the setup script for repeatable demonstrations and screenshots.
 
 The normalized relational model is serialized into nested JSON in
@@ -125,7 +126,7 @@ and junction rows become the transaction's `categories` array.
 ```sql
 -- Read transactions with their parties and all categories
 SELECT t.external_reference, s.full_name AS sender, r.full_name AS recipient,
-       t.amount, GROUP_CONCAT(c.category_name) AS categories
+    t.amount, STRING_AGG(c.category_name, ', ') AS categories
 FROM transactions AS t
 LEFT JOIN users AS s ON s.user_id = t.sender_user_id
 LEFT JOIN users AS r ON r.user_id = t.recipient_user_id
@@ -143,8 +144,7 @@ WHERE transaction_id = 5 AND category_id = 1;
 
 The schema's accuracy and security rules include foreign-key enforcement, unique
 identifiers, domain checks, non-negative monetary values, controlled status/role values,
-and prevention of self-transfers. Enable SQLite foreign keys with
-`PRAGMA foreign_keys = ON` for every connection.
+and prevention of self-transfers. Foreign keys are enabled in the database schema.
 
 ---
 
@@ -172,7 +172,7 @@ The board contains the following columns:
 
 ### Database
 
-* SQLite
+* SQL database
 
 ### Frontend
 

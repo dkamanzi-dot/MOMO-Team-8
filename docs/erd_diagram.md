@@ -1,7 +1,6 @@
 # MoMo SMS Database ERD
 
-This diagram is rendered by GitHub from Mermaid syntax. It is maintained beside the
-SQL implementation so the visual design and the database structure stay consistent.
+GitHub renders this Mermaid ERD directly. It shows the SQL database design.
 
 ```mermaid
 erDiagram
@@ -11,21 +10,21 @@ erDiagram
     TRANSACTION_CATEGORIES_LOOKUP ||--o{ TRANSACTION_CATEGORIES : classifies
 
     USERS {
-        INTEGER user_id PK
+        INTEGER user_id PK "identity"
         TEXT phone_number UK
         TEXT full_name
         TEXT user_role
-        INTEGER is_active
-        TEXT created_at
-        TEXT updated_at
+        BOOLEAN is_active
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
     }
 
     TRANSACTIONS {
-        INTEGER transaction_id PK
+        INTEGER transaction_id PK "identity"
         TEXT external_reference UK
         INTEGER sender_user_id FK
         INTEGER recipient_user_id FK
-        TEXT transaction_timestamp
+        TIMESTAMP transaction_timestamp
         NUMERIC amount
         TEXT currency
         NUMERIC fee
@@ -33,26 +32,26 @@ erDiagram
         TEXT original_sms
         NUMERIC balance_before
         NUMERIC balance_after
-        TEXT created_at
-        TEXT updated_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
     }
 
     TRANSACTION_CATEGORIES_LOOKUP {
-        INTEGER category_id PK
+        INTEGER category_id PK "identity"
         TEXT category_code UK
         TEXT category_name UK
         TEXT description
-        INTEGER is_active
+        BOOLEAN is_active
     }
 
     TRANSACTION_CATEGORIES {
-        INTEGER transaction_id PK, FK
-        INTEGER category_id PK, FK
-        TEXT assigned_at
+        INTEGER transaction_id PK FK
+        INTEGER category_id PK FK
+        TIMESTAMP assigned_at
     }
 
     SYSTEM_LOGS {
-        INTEGER log_id PK
+        INTEGER log_id PK "identity"
         TEXT process_name
         TEXT log_level
         TEXT status
@@ -61,20 +60,15 @@ erDiagram
         INTEGER records_failed
         TEXT source_file
         TEXT error_message
-        TEXT started_at
-        TEXT completed_at
+        TIMESTAMP started_at
+        TIMESTAMP completed_at
     }
 ```
 
-## Relationship Notes
+## Relationship Summary
 
-- One user can send many transactions.
-- One user can receive many transactions.
-- One transaction can have many category assignments.
-- One category can classify many transactions.
-- `transaction_categories` resolves the many-to-many relationship between transactions
-  and categories.
-- `system_logs` records ETL activity independently of transaction records.
+Users send and receive transactions. Transactions and categories have a many-to-many
+relationship resolved by `transaction_categories`. `system_logs` stores ETL activity.
 
 ## Source
 
