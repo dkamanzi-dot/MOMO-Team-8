@@ -1,5 +1,5 @@
 -- =====================================================================
--- MoMo SMS Database — MySQL translation of teammate's design
+-- MoMo SMS Database - MySQL translation of teammate's design
 -- Matches the pushed PostgreSQL schema and ERD diagram, converted to
 -- valid MySQL 8.0+ syntax (AUTO_INCREMENT, DATETIME, DECIMAL, ENUM,
 -- ON UPDATE CURRENT_TIMESTAMP instead of plpgsql triggers).
@@ -41,8 +41,8 @@ CREATE TABLE transaction_categories_lookup (
 CREATE TABLE transactions (
     transaction_id          INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique internal transaction ID',
     external_reference      VARCHAR(50) NOT NULL UNIQUE COMMENT 'MoMo-issued transaction reference',
-    sender_user_id           INT DEFAULT NULL COMMENT 'FK to users — who sent the money, NULL if not applicable',
-    recipient_user_id        INT DEFAULT NULL COMMENT 'FK to users — who received the money, NULL if not applicable',
+    sender_user_id           INT DEFAULT NULL COMMENT 'FK to users, who sent the money, NULL if not applicable',
+    recipient_user_id        INT DEFAULT NULL COMMENT 'FK to users, who received the money, NULL if not applicable',
     transaction_timestamp    DATETIME NOT NULL COMMENT 'When the transaction occurred',
     amount                    DECIMAL(15,2) NOT NULL COMMENT 'Transaction amount',
     currency                  CHAR(3) NOT NULL DEFAULT 'RWF' COMMENT 'ISO currency code',
@@ -65,7 +65,7 @@ CREATE TABLE transactions (
 
 -- =====================================================================
 -- JUNCTION TABLE: transaction_categories
--- Resolves M:N between transactions and categories — a transaction can
+-- Resolves M:N between transactions and categories. A transaction can
 -- carry multiple categories, a category can classify many transactions.
 -- =====================================================================
 CREATE TABLE transaction_categories (
@@ -79,7 +79,7 @@ CREATE TABLE transaction_categories (
 
 -- =====================================================================
 -- TABLE: system_logs
--- Batch/pipeline-run level logging — independent of individual transactions.
+-- Batch/pipeline-run level logging, independent of individual transactions.
 -- =====================================================================
 CREATE TABLE system_logs (
     log_id                  INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique log entry ID',
