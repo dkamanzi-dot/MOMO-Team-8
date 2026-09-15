@@ -84,17 +84,44 @@ matches [database/database_setup.sql](database/database_setup.sql).
 The image version required for submission is [docs/erd_diagram.png](docs/erd_diagram.png).
 
 ## Week 2 Database Design
+Overview
 
-The standalone SQL implementation is available in `database/database_setup.sql`.
-It creates the following entities:
+The database stores parsed MoMo SMS transaction data extracted from the raw XML export. It was designed by analyzing the actual structure of the SMS messages (sender/recipient patterns, transaction categories, amounts, fees, balances) rather than assumed generically, to make sure the schema matches what the parser can realistically extract.
 
-| Table | Purpose | Primary key | Important foreign keys |
-| --- | --- | --- | --- |
-| `users` | Customers, merchants, and agents involved in transactions | `user_id` | None |
-| `transactions` | Amount, parties, status, balances, and original SMS | `transaction_id` | `sender_user_id`, `recipient_user_id` -> `users.user_id` |
-| `transaction_categories_lookup` | Controlled vocabulary for payment types | `category_id` | None |
-| `transaction_categories` | Resolves the transaction/category M:N relationship | (`transaction_id`, `category_id`) | Both parent tables |
-| `system_logs` | ETL and export processing history | `log_id` | None |
+Schema
+
+6 core tables:
+
+users — every party in a transaction (account owner + counterparties)
+transaction_categories_lookup — transaction type lookup (P2P, AIRTIME, BILL, CASH_IN, MERCHANT)
+transactions — the core fact table: amount, fee, status, timestamps, balances
+transaction_categories — junction table resolving the many-to-many relationship between transactions and categories (a transaction can belong to more than one category)
+system_logs — audit trail of pipeline runs (import, normalization, categorization, export)
+
+Full entity relationships and design rationale are documented in docs/erd_and_data_dictionary.md, with the diagram at docs/erd_diagram.png.
+
+Setup
+
+Requires MySQL 8.0+ (uses native CHECK constraints and ON UPDATE CURRENT_TIMESTAMP).
+
+bash
+mysql -u root -p < database/database_setup.sql
+
+This drops and recreates the database, creates all tables with constraints and indexes, and loads 5+ sample records per core table.
+
+Verifying it works
+sql
+USE momo_sms_db_v2;
+SELECT t.external_reference, s.full_name AS sender, r.full_name AS recipient,
+       t.amount, GROUP_CONCAT(c.category_name SEPARATOR ', ') AS categories
+FROM transactions t
+LEFT JOIN users s ON s.user_id = t.sender_user_id
+LEFT JOIN users r ON r.user_id = t.recipient_user_id
+JOIN transaction_categories tc ON tc.transaction_id = t.transaction_id
+JOIN transaction_categories_lookup c ON c.category_id = tc.category_id
+GROUP BY t.transaction_id;
+
+Full CRUD testing (Create, Read, Update, Delete) plus constraint-enforcement proof (foreign key and CHECK constraint rejections) is documented with screenshots in database/CRUD_EVIDENCE.md.
 
 ### Design Rationale
 
