@@ -123,7 +123,7 @@ GROUP BY t.transaction_id;
 
 Full CRUD testing (Create, Read, Update, Delete) plus constraint-enforcement proof (foreign key and CHECK constraint rejections) is documented with screenshots in database/CRUD_EVIDENCE.md.
 
-Database Testing
+###Database Testing
 
 The schema was built and verified against a live MySQL 8.0 instance. All four CRUD operations were executed successfully, and the schema's data-integrity constraints were tested by deliberately attempting invalid writes to confirm the database rejects them.
 
