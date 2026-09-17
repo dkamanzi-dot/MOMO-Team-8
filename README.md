@@ -74,14 +74,17 @@ MoMo XML Data
 
 ### Architecture Diagram
 
-The detailed architecture diagram is available in:
+![MoMo SMS transaction system architecture](docs/architecture.png)
 
-[docs/architecture.svg](docs/architecture.svg)
+Source files: [docs/architecture.png](docs/architecture.png) (rendered) and
+[docs/architecture.svg](docs/architecture.svg) (vector original).
 
-The database ERD is available as a GitHub-rendered diagram in
-[docs/erd_diagram.md](docs/erd_diagram.md). It is generated from Mermaid source and
-matches [database/database_setup.sql](database/database_setup.sql).
-The image version required for submission is [docs/erd_diagram.png](docs/erd_diagram.png).
+### Entity Relationship Diagram
+
+![MoMo SMS database entity relationship diagram](docs/erd_diagram.png)
+
+The ERD is generated from Mermaid source in [docs/erd_diagram.md](docs/erd_diagram.md)
+and matches [database/database_setup.sql](database/database_setup.sql).
 
 ## Week 2 Database Design
 
