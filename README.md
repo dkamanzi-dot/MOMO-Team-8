@@ -123,6 +123,22 @@ GROUP BY t.transaction_id;
 
 Full CRUD testing (Create, Read, Update, Delete) plus constraint-enforcement proof (foreign key and CHECK constraint rejections) is documented with screenshots in database/CRUD_EVIDENCE.md.
 
+Database Testing
+
+The schema was built and verified against a live MySQL 8.0 instance. All four CRUD operations were executed successfully, and the schema's data-integrity constraints were tested by deliberately attempting invalid writes to confirm the database rejects them.
+
+Full testing evidence, including SQL statements, results, and Workbench screenshots, is documented in database/CRUD_EVIDENCE.md.
+
+Operation	Verified
+CREATE — insert a new pipeline log entry	
+READ — multi-table join across users, transactions, and categories	
+READ — raw table select	
+UPDATE — change a transaction's status	
+DELETE — remove a category assignment from the junction table	
+CHECK constraint rejection — invalid transaction blocked by the database	
+
+Data integrity is enforced at the database level rather than relying on application code: foreign keys guarantee transactions can only reference users and categories that actually exist, and CHECK constraints reject negative amounts, malformed phone numbers, empty names, and transactions where the sender and recipient are the same person.
+
 ### Design Rationale
 
 The schema separates people, transaction facts, category definitions, and processing
