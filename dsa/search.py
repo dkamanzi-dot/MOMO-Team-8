@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     print(f"Total records: {len(records)}")
     print(f"{'n':>6} | {'linear (us)':>12} | {'dict (us)':>10} | speedup")
-    for n in (20, 100, 500, len(records)):
+    sizes = sorted({n for n in (20, 100, 500, 1000) if n < len(records)} | {len(records)})
+    for n in sizes:
         subset = records[:n]
         sub_table = {r["id"]: r for r in subset}
         ids = random.sample([r["id"] for r in subset], 20)

@@ -42,7 +42,7 @@ def get_parties(body, tx_type, address):
     if tx_type == "incoming" and m:
         sender = m.group(1).strip()
     m = re.search(r"(?:to|transferred to) ([A-Za-z ]+?)\s*(?:\(|\d|has been)", body)
-    if tx_type in ("payment", "transfer") and m:
+    if tx_type in ("payment", "transfer", "airtime") and m:
         sender, receiver = "me", m.group(1).strip()
     return sender, receiver
 

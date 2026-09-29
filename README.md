@@ -194,6 +194,40 @@ and prevention of self-transfers. Foreign keys are enabled in the database schem
 
 ---
 
+## Week 3: REST API (http.server + Basic Auth)
+
+Uses only the Python standard library (Python 3.9+).
+
+### Setup
+
+1. Put the dataset at `data/modified_sms_v2.xml`
+2. Copy `.env.example` to `.env` and set `API_USERNAME` and `API_PASSWORD`
+3. Parse the XML to JSON:
+   ```bash
+   python dsa/parse_xml.py
+   ```
+4. Start the API on http://localhost:8000:
+   ```bash
+   python api/server.py
+   ```
+5. Test it:
+   ```bash
+   curl -u admin:change_me http://localhost:8000/transactions/1
+   curl -u admin:wrong http://localhost:8000/transactions      # 401
+   ```
+6. Run the DSA comparison:
+   ```bash
+   cd dsa && python search.py
+   ```
+
+- API code: `api/server.py`
+- Parsing and DSA: `dsa/parse_xml.py`, `dsa/search.py`
+- Endpoint docs: [docs/api_docs.md](docs/api_docs.md)
+- Report: [docs/report.md](docs/report.md)
+- Test screenshots: `screenshots/`
+
+---
+
 ## Scrum Board
 
 Team 8 uses a Scrum board to organize project tasks and track progress.
