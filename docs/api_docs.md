@@ -19,7 +19,7 @@ Transaction object:
 }
 ```
 
-`type` is one of: `incoming`, `payment`, `transfer`, `deposit`, `withdrawal`, `airtime`, `other`.
+`type` is one of: `incoming`, `payment`, `transfer`, `deposit`, `withdrawal`, `airtime`, `bundle`, `reversal`, `other`.
 
 ---
 

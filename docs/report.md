@@ -34,13 +34,15 @@ Each result is the average time per lookup over 20 random ids, repeated 1000 tim
 
 | Records | Linear search (µs) | Dict lookup (µs) | Speedup |
 |---------|-------------------|------------------|---------|
-| 20 | _fill in_ | _fill in_ | _fill in_ |
-| 100 | | | |
-| 500 | | | |
-| 1000 | | | |
-| all | | | |
+| 20 | 2.19 | 0.21 | 10x |
+| 100 | 5.93 | 0.28 | 21x |
+| 500 | 43.02 | 0.26 | 167x |
+| 1000 | 57.57 | 0.20 | 286x |
+| 1691 (all) | 126.46 | 0.20 | 632x |
 
-(Numbers come from running `python dsa/search.py`.)
+(From `python dsa/search.py` on the full dataset of 1691 records. Exact numbers change a bit each run.)
+
+Linear search time grows with the number of records. Dictionary lookup time stays flat at about 0.2 µs.
 
 **Why is the dictionary faster?** Linear search has to compare ids one by one, so it gets
 slower as the list grows. A dictionary hashes the id and jumps straight to the right slot,

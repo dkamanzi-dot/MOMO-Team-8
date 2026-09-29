@@ -28,6 +28,13 @@ PORT = int(os.environ.get("API_PORT", 8000))
 
 REQUIRED = ["type", "amount", "sender", "receiver", "timestamp"]
 
+# dashboard files the server can send
+STATIC = {
+    "/": ("index.html", "text/html"),
+    "/web/styles.css": ("web/styles.css", "text/css"),
+    "/web/chart_handler.js": ("web/chart_handler.js", "application/javascript"),
+}
+
 
 def load_data():
     if not os.path.exists(JSON_FILE):
@@ -52,6 +59,15 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         if status == 401:
             self.send_header("WWW-Authenticate", 'Basic realm="MoMo API"')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_file(self, name, content_type):
+        with open(os.path.join(ROOT, name), "rb") as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
@@ -89,6 +105,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.check():
             return
+        if self.path in STATIC:
+            return self.send_file(*STATIC[self.path])
         if self.path.rstrip("/") == "/transactions":
             return self.send_json(200, list(transactions.values()))
         matched, tx_id = self.get_id()
@@ -148,5 +166,5 @@ if __name__ == "__main__":
     if not USERNAME or not PASSWORD:
         sys.exit("Set API_USERNAME and API_PASSWORD in .env first")
     print(f"Loaded {len(transactions)} transactions")
-    print(f"Running on http://localhost:{PORT}")
+    print(f"API and dashboard on http://localhost:{PORT}")
     HTTPServer(("", PORT), Handler).serve_forever()

@@ -21,10 +21,14 @@ def get_type(body):
         return "deposit"
     if "withdrawn" in b or "withdraw" in b:
         return "withdrawal"
-    if "transferred to" in b or "sent" in b:
+    if "revers" in b:
+        return "reversal"
+    if "transferred" in b or "sent" in b:
         return "transfer"
-    if "payment" in b:
+    if "payment" in b or "a transaction of" in b:
         return "payment"
+    if "umaze kugura" in b:
+        return "bundle"
     return "other"
 
 
@@ -44,6 +48,15 @@ def get_parties(body, tx_type, address):
     m = re.search(r"(?:to|transferred to) ([A-Za-z ]+?)\s*(?:\(|\d|has been)", body)
     if tx_type in ("payment", "transfer", "airtime") and m:
         sender, receiver = "me", m.group(1).strip()
+    m = re.search(r"A transaction of [\d,]+ RWF by (.+?) on your", body)
+    if m:
+        sender, receiver = "me", " ".join(m.group(1).split())
+    m = re.search(r"via agent: ([A-Za-z ]+?)\s*\(", body)
+    if tx_type == "withdrawal" and m:
+        sender, receiver = "me", m.group(1).strip()
+    if tx_type == "bundle":
+        sender, receiver = "me", "MTN Bundles"
+    receiver = receiver.replace(" with token", "").replace(" has failed at", "").strip()
     return sender, receiver
 
 

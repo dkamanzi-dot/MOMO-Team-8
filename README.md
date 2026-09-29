@@ -210,6 +210,8 @@ Uses only the Python standard library (Python 3.9+).
    ```bash
    python api/server.py
    ```
+   The dashboard is served by the same server. Open http://localhost:8000/ in a browser
+   and log in with the username and password from `.env`.
 5. Test it:
    ```bash
    curl -u admin:change_me http://localhost:8000/transactions/1
